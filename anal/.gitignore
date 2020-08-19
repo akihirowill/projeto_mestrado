@@ -1,0 +1,6 @@
+*.wpr
+*.wpu
+*.pdf
+*.pickle
+*_tptn_fpfn.txt
+__pycache__

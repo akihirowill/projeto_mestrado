@@ -1,0 +1,15 @@
+1) tempo de análise inicial por quantidade de funções do binário no IDA/r2;
+tempo de aplicação de assinaturas por (quantidade de funções * quantidade de assinaturas)
+OK
+
+2) verdadeiro/falso positivo/negativo da melhor detecção do IDA/r2 pra amostras que vieram com símbolos
+OK
+
+3) histograma do desvio em dias com relação à versão de glibc prevista via changelog
+OK
+
+4) sensibilidade à versão de libc (no IDA/r2)
+OK
+
+5) alguma comparação entre distribuições
+OK
