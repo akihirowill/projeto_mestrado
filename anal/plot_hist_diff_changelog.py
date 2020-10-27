@@ -16,11 +16,11 @@ with open('allsigs.txt') as f:
     allsigs = set(ver_from_signame(s.strip()) for s in f)
 
 
-def get_timestamp(package, version):
+def get_timestamp(name, version):
     c = conn.cursor()
     c.execute("SELECT timestamp FROM versions "
-              "WHERE package=? AND version=?",
-              (package, version))
+              "WHERE name=? AND version=?",
+              (name, version))
     row = c.fetchone()
     if not row:
         return None

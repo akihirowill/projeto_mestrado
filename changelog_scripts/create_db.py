@@ -14,19 +14,21 @@ conn = sqlite3.connect('versions.db')
 c = conn.cursor()
 c.executescript("""
 CREATE TABLE IF NOT EXISTS versions (
+  name text not null,
   package text not null,
   version text not null,
   timestamp int not null,
   distro text not null,
   distro_release text,
+  UNIQUE (name, version, timestamp, distro, distro_release),
   UNIQUE (package, version, timestamp, distro, distro_release)
 );
 """)
 
 
-def insert_row(package, version, timestamp, distro, distro_release=None):
-    c.execute('INSERT OR REPLACE INTO versions (package, version, timestamp, distro, distro_release) VALUES (?, ?, ?, ?, ?)',
-              (package, version, timestamp, distro, distro_release))
+def insert_row(name, package, version, timestamp, distro, distro_release=None):
+    c.execute('INSERT OR REPLACE INTO versions (name, package, version, timestamp, distro, distro_release) VALUES (?, ?, ?, ?, ?, ?)',
+              (name, package, version, timestamp, distro, distro_release))
 
 
 def debian_changelog_readlines(filename):
@@ -44,6 +46,7 @@ def debian_changelog_readlines(filename):
                     if line.startswith(b'+++') and line.endswith(b'/debian/changelog\n'):
                         state_in = True
     else:
+        print(filename)
         with tarfile.open(filename) as tarf:
             for line in tarf.extractfile('debian/changelog'):
                 yield line
@@ -88,28 +91,35 @@ def redhat_changelog_process(filename):
             yield version.decode('ascii'), timestamp
 
 
-def list_dir(distro, package):
-    path = os.path.join(distro, package)
+def debian_package_from_filename(filename):
+    filename = os.path.basename(filename)
+    return re.search(r'^[^_]+', filename).group(0)
+
+
+def list_dir(distro, name):
+    path = os.path.join(distro, name)
     for filename in os.listdir(path):
         yield os.path.join(path, filename)
 
 
-for package in 'glibc', 'gcc':
+for name in 'glibc', 'gcc':
     distro = 'debian'
-    for filename in list_dir(distro, package):
+    for filename in list_dir(distro, name):
+        package = debian_package_from_filename(filename)
         for version, timestamp, distro_release in debian_changelog_process(filename):
-            insert_row(package, version, timestamp, distro, distro_release)
+            insert_row(name, package, version, timestamp, distro, distro_release)
 
     distro = 'ubuntu'
-    for filename in list_dir(distro, package):
+    for filename in list_dir(distro, name):
+        package = debian_package_from_filename(filename)
         for version, timestamp, distro_release in debian_changelog_process(filename, ignore_distro_release=False):
-            insert_row(package, version, timestamp, distro, distro_release)
+            insert_row(name, package, version, timestamp, distro, distro_release)
 
     distro = 'centos'
-    for filename in list_dir(distro, package):
-        distro_release = re.search('el\d', filename).group(0)
+    for filename in list_dir(distro, name):
+        distro_release = re.search(r'el\d', filename).group(0)
         for version, timestamp in redhat_changelog_process(filename):
-            insert_row(package, version, timestamp, distro, distro_release)
+            insert_row(name, name, version, timestamp, distro, distro_release)
 
 
 conn.commit()
